@@ -1,0 +1,76 @@
+version: '3.8'
+
+services:
+
+  rabbitmq:
+    image: rabbitmq:3.12-management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: tata
+      RABBITMQ_DEFAULT_PASS: tata123
+
+  postgres:
+    image: postgres:16
+    container_name: postgres_clientes
+    environment:
+      POSTGRES_USER: tata
+      POSTGRES_PASSWORD: tata123
+    ports: 
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./db/BaseDatos.sql:/docker-entrypoint-initdb.d/BaseDatos.sql
+    
+  microservices_clientes:
+    build: 
+      context: ./clientes
+      dockerfile: dockerfile
+    container_name: microservices_clientes
+    depends_on:
+      - postgres
+      - rabbitmq 
+    ports:
+      - "8081:8080"
+    #depends_on:
+    #  postgres:
+    #    condition: service_healthy
+    #  rabbitmq:
+    #    condition: service_healthy
+    
+    #healthcheck:
+    #  test: ["CMD-SHELL", "pg_isready -U tata -d clientes_db"]
+    #  interval: 10s
+    #  timeout: 5s
+    #  retries: 10  
+    #environment:
+    #  SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/clientes_db
+    #  SPRING_DATASOURCE_USERNAME: tata
+    #  SPRING_DATASOURCE_PASSWORD: tata123
+  
+
+  microservices_cuentas:
+    build:
+      context: ./cuentas
+      dockerfile: dockerfile
+    container_name: microservices_cuentas
+    depends_on:
+      - postgres
+      - rabbitmq
+    ports:
+      - "8082:8080"
+    #depends_on:
+    #  postgres:
+    #    condition: service_healthy
+    #  rabbitmq:
+    #    condition: service_healthy
+    
+    #environment:
+    #  SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/cuentas_db
+    #  SPRING_DATASOURCE_USERNAME: tata
+    #  SPRING_DATASOURCE_PASSWORD: tata123
+
+volumes:
+  postgres_data:
