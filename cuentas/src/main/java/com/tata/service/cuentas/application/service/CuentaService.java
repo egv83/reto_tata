@@ -50,7 +50,7 @@ public class CuentaService {
         ClienteEntity clienteEntity = clienteRepository.findByNombre(request.cliente())
                 .orElseThrow(() -> new ClienteNotFoundException());
 
-        if(!clienteEntity.getEstado()){
+        if (!clienteEntity.getEstado()) {
             throw new ClienteInactivoException();
         }
 
@@ -66,16 +66,14 @@ public class CuentaService {
 
         try {
             cuentaRepository.save(cuentaEntity);
-        }catch (DataIntegrityViolationException e){
-            throw new CuentaException("Error al crear la cuenta: "+e);
+        } catch (DataIntegrityViolationException e) {
+            throw new CuentaException("Error al crear la cuenta: " + e);
         }
 
-        BigDecimal monto = BigDecimal.valueOf(0);
-        movimientoRepository.buscarPorNumeroCuenta(cuenta).stream()
-                .forEach(movimiento -> {
-                    monto.add(movimiento.getSaldo());
-                });
-        monto.add(request.saldoInicial());
+        BigDecimal monto = movimientoRepository.buscarPorNumeroCuenta(cuenta).stream()
+                .map(movimiento -> movimiento.getSaldo())
+                .reduce(request.saldoInicial(), BigDecimal::add);
+//        monto = monto.add(request.saldoInicial());
 
         MovimientoEntity movimientoEntity = new MovimientoEntity(
                 LocalDateTime.now(),
@@ -90,15 +88,15 @@ public class CuentaService {
         } catch (DataIntegrityViolationException e) {
             throw new MovimientoException("Error al crear el moviminto: " + e);
         }
-        return cuentaMapper.toCuentaResponseDTO(cuentaEntity,clienteEntity);
+        return cuentaMapper.toCuentaResponseDTO(cuentaEntity, clienteEntity);
     }
 
     public List<CuentaResponseDTO> getCuentas() {
         List<CuentaResponseDTO> lista = new ArrayList<>();
 
-        for(CuentaEntity cuenta : cuentaRepository.findAll()){
+        for (CuentaEntity cuenta : cuentaRepository.findAll()) {
             ClienteEntity cliente = clienteRepository.findByIdentificacion(cuenta.getClienteIdentificacion()).get();
-            lista.add(cuentaMapper.toCuentaResponseDTO(cuenta,cliente));
+            lista.add(cuentaMapper.toCuentaResponseDTO(cuenta, cliente));
 
         }
 
@@ -119,7 +117,7 @@ public class CuentaService {
         ClienteEntity clienteEntity = clienteRepository.findByIdentificacion(cuentaEntity.getClienteIdentificacion())
                 .get();
 
-        return cuentaMapper.toCuentaResponseDTO(cuentaEntity,clienteEntity);
+        return cuentaMapper.toCuentaResponseDTO(cuentaEntity, clienteEntity);
     }
 
     public void actualizarEstado(String cuenta, CuentaEstadoDTO request) {
